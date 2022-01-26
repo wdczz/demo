@@ -16,6 +16,6 @@ def pose_subscribe():
 
 
 if __name__ == '__main__':
-    g=[[0]*5]*5
+    g=[[0.0]*20]*360
     g[0][0]=1
     print(g[0])
