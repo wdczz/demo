@@ -90,7 +90,7 @@ class robot1(robot):
         msg.range_min=0.300000011921
         msg.range_max=30.0
         msg.header.stamp = rospy.Time().now()
-        msg.header.frame_id ="robot1/laser"
+        msg.header.frame_id =str(self.obj_name)+"/laser"
         msg.intensities=[0.0]*360
         while True:
             if self.can_get_point:
