@@ -1,0 +1,2 @@
+arbotix_ros/arbotix:arbotix_ros/arbotix_controllers:arbotix_ros/arbotix_firmware:arbotix_ros/arbotix_msgs:arbotix_ros/arbotix_python:arbotix_ros/arbotix_sensors:teleop_twist_keyboard:urdf01_rviz:urdf02_gazebo
+-DCATKIN_DEVEL_PREFIX=/home/wdc/demo/devel -DCMAKE_INSTALL_PREFIX=/home/wdc/demo/install -G Unix Makefiles
