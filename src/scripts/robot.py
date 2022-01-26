@@ -1,17 +1,11 @@
-from asyncio import sleep
-from re import S, T
-import threading
-from tkinter import Y
-from tkinter.messagebox import NO
-from traceback import print_stack
-
-from pip import main
 import rospy
 import numpy as np
 from queue import Queue
 from sensor_msgs.msg import LaserScan
-import time
+import time 
 import pandas
+import multiprocessing as mp
+import threading 
 
 class robot():
     def __init__(self,obj) -> None:
@@ -121,8 +115,17 @@ class robot1(robot):
     
 if __name__ == '__main__':
     robot_f=robot1(obj="robot1")
+    # robot_d=robot1(obj="robot2")
     robot_f.init_ros()
+    # robot_d.init_ros()
     robot_f.theard_start()
+    # f=mp.Process(target=robot_f.theard_start)
+    # d=mp.Process(target=robot_d.theard_start)
+    # f.start()
+    # d.start()
+    # f.join()
+    # d.join()
+    
 
 
 
