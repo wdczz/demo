@@ -1,0 +1,46 @@
+<robot name="my_camera" xmlns:xacro="http://wiki.ros.org/xacro">
+   
+    <xacro:property name="ns" value="$(arg ns)/" />
+
+    <xacro:property name="camera_length" value="0.03" /> 
+    <xacro:property name="camera_width" value="0.075" /> 
+    <xacro:property name="camera_height" value="0.075" /> 
+    <xacro:property name="camera_x" value="0.24" /> 
+    <xacro:property name="camera_y" value="0.0" /> 
+    <xacro:property name="camera_z" value="${base_link_length / 2 + camera_height / 2}" /> 
+
+    <xacro:property name="camera_m" value="0.2" /> 
+
+    
+    <link name="${ns}camera">
+        <visual>
+            <geometry>
+                <box size="${camera_length} ${camera_width} ${camera_height}" />
+            </geometry>
+            <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0" />
+            <material name="black" />
+        </visual>
+        <collision>
+            <geometry>
+                <box size="${camera_length} ${camera_width} ${camera_height}" />
+            </geometry>
+            <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0" />
+        </collision>
+        <xacro:Box_inertial_matrix m="${camera_m}" l="${camera_length}" w="${camera_width}" h="${camera_height}" />
+    </link>
+
+    <joint name="${ns}camera2base_link" type="fixed">
+        <parent link="${ns}base_link" />
+        <child link="${ns}camera" />
+        <origin xyz="${camera_x} ${camera_y} ${camera_z}" />
+    </joint>
+    <gazebo reference="${ns}camera">
+        <material>Gazebo/Red</material>
+    </gazebo>
+</robot>
+
+
+
+
+
+
