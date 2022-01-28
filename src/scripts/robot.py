@@ -1,3 +1,5 @@
+from select import select
+from tkinter import N
 import rospy
 import numpy as np
 from queue import Queue
@@ -6,6 +8,7 @@ import time
 import pandas
 import multiprocessing as mp
 import threading 
+import math
 
 class robot():
     def __init__(self,obj) -> None:
@@ -36,12 +39,16 @@ class robot1(robot):
         self.can_get_point=False
         self.scan_array=None
         self.can_get_g=False
+        self.move=None
+        self.map=None
+        self.can_get_move=False
+        self.now_info=None
     
     def get_scan(self,msg):
         msgrange=msg.ranges
-        
+        self.now_info=np.array(msgrange)
         if len(self.scan) == 20:
-            time.sleep(0.5)
+            time.sleep(0.001)
             self.scan.append(msgrange)
             self.scan.pop(0)
             self.scan_array=np.array(self.scan)
@@ -49,6 +56,18 @@ class robot1(robot):
         else:
             self.scan.append(msgrange)
             rospy.loginfo(len(self.scan))
+
+
+    def get_move(self):
+        while True:
+            if len(self.scan) == 20 and self.can_get_point==True:
+                move=self.now_info-self.g_most
+                self.move=self.now_info
+                for i in range(360):
+                    if math.fabs(move[i])<0.05:
+                        self.move[i]=0
+                self.can_get_move=True
+    
       
 
     def sub_scan(self):
@@ -71,6 +90,27 @@ class robot1(robot):
                 self.g_most=np.sum(self.g,1)/20
                 self.can_get_point=True
 
+    def publish_move(self):
+        topic="/"+str(self.obj_name)+"/move"+"_pub"
+        pub = rospy.Publisher(topic, LaserScan, queue_size=10)
+        rate = rospy.Rate(10) # 10hz
+        msg=LaserScan()
+        msg.angle_max=3.14199995995
+        msg.angle_min=-3.14199995995
+        msg.angle_increment=0.0175041779876
+        msg.time_increment=0.0
+        msg.scan_time=0.0
+        msg.range_min=0.300000011921
+        msg.range_max=30.0
+        msg.header.stamp = rospy.Time().now()
+        msg.header.frame_id =str(self.obj_name)+"/laser"
+        msg.intensities=[125.0]*360
+        while True:
+            if self.can_get_move:
+                msg.ranges=self.move
+                pub.publish(msg)
+                rate.sleep()
+                
     def publish_point(self):
         topic="/"+str(self.obj_name)+"/scan"+"_pub"
         pub = rospy.Publisher(topic, LaserScan, queue_size=10)
@@ -96,14 +136,14 @@ class robot1(robot):
     def theard_start(self):
         scan=threading.Thread(target=self.sub_scan)
         g=threading.Thread(target=self.get_g)
-        # g_most=threading.Thread(target=self.get_g_most)
-        publish=threading.Thread(target=self.publish_point)
+        get_move=threading.Thread(target=self.get_move)
+        publish=threading.Thread(target=self.publish_move)
         scan.start()
         g.start()
-        # g_most.start()
+        get_move.start()
         publish.start()
         scan.join()
-        # print_scan.join()
+        get_move.join()
         g.join()
         publish.join()
 
@@ -115,16 +155,9 @@ class robot1(robot):
     
 if __name__ == '__main__':
     robot_f=robot1(obj="robot1")
-    # robot_d=robot1(obj="robot2")
     robot_f.init_ros()
-    # robot_d.init_ros()
     robot_f.theard_start()
-    # f=mp.Process(target=robot_f.theard_start)
-    # d=mp.Process(target=robot_d.theard_start)
-    # f.start()
-    # d.start()
-    # f.join()
-    # d.join()
+
     
 
 

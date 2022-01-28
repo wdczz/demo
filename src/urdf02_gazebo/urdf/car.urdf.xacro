@@ -7,6 +7,7 @@
     
     <xacro:include filename="gazebo/move.xacro" /> 
     <xacro:include filename="gazebo/laser.xacro" /> 
+    <xacro:include filename="gazebo/kinnect.xacro" /> 
     
 
 </robot>

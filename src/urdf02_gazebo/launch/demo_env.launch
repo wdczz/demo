@@ -23,7 +23,7 @@
 
        <param name="robot_description" command="$(find xacro)/xacro $(find urdf02_gazebo)/urdf/car.urdf.xacro ns:=robot1" />
        <node pkg="gazebo_ros" type="spawn_model" name="robot1" args="-urdf -model robot1 -param robot_description" />
-    
+       <node pkg="teleop_twist_keyboard" type="teleop_twist_keyboard.py" name="teleop_twist_keyboard" />
      </group>
 
 
