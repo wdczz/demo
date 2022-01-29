@@ -87,8 +87,29 @@ class robot1(robot):
             if len(self.scan)==20 and self.can_get_g==True:
                 scan_copy=self.scan_array
                 self.g=scan_copy.T
-                self.g_most=np.sum(self.g,1)/20
+                self.g_most=np.median(self.g,1)
                 self.can_get_point=True
+    
+    def get_classes(self):
+        # 选择0.5米，为区别类别的阈值
+        while True:
+            time.sleep(5)
+            class_number=0
+            class_val={}
+            zancun=[]
+            if self.can_get_move:
+                for i in range(360):    
+                    if self.move[i]==0:
+                        if bool(zancun):
+                            class_val[str(class_number)]=zancun
+                            class_number+=1
+                            zancun=[]
+                    else:
+                            zancun.append(i)
+                print("class num: {}".format(class_number))
+                        
+
+
 
     def publish_move(self):
         topic="/"+str(self.obj_name)+"/move"+"_pub"
@@ -110,6 +131,7 @@ class robot1(robot):
                 msg.ranges=self.move
                 pub.publish(msg)
                 rate.sleep()
+
                 
     def publish_point(self):
         topic="/"+str(self.obj_name)+"/scan"+"_pub"
@@ -138,14 +160,17 @@ class robot1(robot):
         g=threading.Thread(target=self.get_g)
         get_move=threading.Thread(target=self.get_move)
         publish=threading.Thread(target=self.publish_move)
+        get_classes=threading.Thread(target=self.get_classes)
         scan.start()
         g.start()
         get_move.start()
         publish.start()
+        get_classes.start()
         scan.join()
         get_move.join()
         g.join()
         publish.join()
+        get_classes.join()
 
     def init_ros(self):
         node="LaserScan"+str(self.obj_name)
