@@ -53,7 +53,6 @@ class robot1(robot):
         msgrange=msg.ranges
         self.now_info=np.array(msgrange)
         if len(self.scan) == 20:
-            time.sleep(0.001)
             self.scan.append(msgrange)
             self.scan.pop(0)
             self.scan_array=np.array(self.scan)
@@ -69,11 +68,11 @@ class robot1(robot):
                 move=self.now_info-self.g_most
                 self.move=self.now_info
                 for i in range(360):
-                    if math.fabs(move[i])<0.1:
+                    if math.fabs(move[i])<0.3:
                         self.move[i]=0
                 self.can_get_move=True
 
-    def get_means_shift(self):
+    def get_class(self):
         while True:
             if self.means_shift_ok:
                 class_num=0
@@ -178,19 +177,19 @@ class robot1(robot):
         g=threading.Thread(target=self.get_g)
         get_move=threading.Thread(target=self.get_move)
         publish=threading.Thread(target=self.publish_move)
-        means_shift=threading.Thread(target=self.get_means_shift)
+        get_class=threading.Thread(target=self.get_class)
         get_zjzbx=threading.Thread(target=self.get_zjzbx)
         scan.start()
         g.start()
         get_move.start()
         publish.start()
-        means_shift.start()
+        get_class.start()
         get_zjzbx.start()
         scan.join()
         get_move.join()
         g.join()
         publish.join()
-        means_shift.join()
+        get_class.join()
         get_zjzbx.join()
 
     def init_ros(self):
