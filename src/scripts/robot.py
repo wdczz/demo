@@ -1,5 +1,6 @@
-from select import select
-from tkinter import N
+from asyncio import sleep
+from turtle import radians
+from means_shift import *
 import rospy
 import numpy as np
 from queue import Queue
@@ -9,6 +10,7 @@ import pandas
 import multiprocessing as mp
 import threading 
 import math
+
 
 class robot():
     def __init__(self,obj) -> None:
@@ -43,6 +45,9 @@ class robot1(robot):
         self.map=None
         self.can_get_move=False
         self.now_info=None
+        self.move_zzb=None
+        self.move_with_class=np.empty([360,2]) 
+        self.means_shift_ok=False
     
     def get_scan(self,msg):
         msgrange=msg.ranges
@@ -64,11 +69,41 @@ class robot1(robot):
                 move=self.now_info-self.g_most
                 self.move=self.now_info
                 for i in range(360):
-                    if math.fabs(move[i])<0.05:
+                    if math.fabs(move[i])<0.1:
                         self.move[i]=0
                 self.can_get_move=True
-    
-      
+
+    def get_means_shift(self):
+        while True:
+            if self.means_shift_ok:
+                class_num=0
+                for i in range(360):
+                    if euclidean_dist([0,0],self.move_zzb[i])[0]>0.1:
+                        if i==0:
+                            class_num+=1
+                            self.move_with_class[i]=(class_num,self.move[i])
+                        else :
+                            if euclidean_dist(self.move_zzb[i-1],self.move_zzb[i])[0]<=0.5:
+                                self.move_with_class[i]=(class_num,self.move[i])
+                            else :
+                                class_num+=1
+                                self.move_with_class[i]=(class_num,self.move[i])
+                print("class number is {}".format(class_num))
+
+
+
+        
+    def get_zjzbx(self):
+        while True:
+            move_zzb=[]
+            if self.can_get_move==True:
+                for i in range(360):
+                    x=self.move[i]*math.cos(math.radians(i))
+                    y=self.move[i]*math.sin(math.radians(i))
+                    move_zzb.append((x,y))
+                self.move_zzb=np.array(move_zzb)
+                self.means_shift_ok=True
+
 
     def sub_scan(self):
         topic="/"+str(self.obj_name)+"/scan"
@@ -89,24 +124,7 @@ class robot1(robot):
                 self.g=scan_copy.T
                 self.g_most=np.median(self.g,1)
                 self.can_get_point=True
-    
-    def get_classes(self):
-        # 选择0.5米，为区别类别的阈值
-        while True:
-            time.sleep(5)
-            class_number=0
-            class_val={}
-            zancun=[]
-            if self.can_get_move:
-                for i in range(360):    
-                    if self.move[i]==0:
-                        if bool(zancun):
-                            class_val[str(class_number)]=zancun
-                            class_number+=1
-                            zancun=[]
-                    else:
-                            zancun.append(i)
-                print("class num: {}".format(class_number))
+
                         
 
 
@@ -160,17 +178,20 @@ class robot1(robot):
         g=threading.Thread(target=self.get_g)
         get_move=threading.Thread(target=self.get_move)
         publish=threading.Thread(target=self.publish_move)
-        get_classes=threading.Thread(target=self.get_classes)
+        means_shift=threading.Thread(target=self.get_means_shift)
+        get_zjzbx=threading.Thread(target=self.get_zjzbx)
         scan.start()
         g.start()
         get_move.start()
         publish.start()
-        get_classes.start()
+        means_shift.start()
+        get_zjzbx.start()
         scan.join()
         get_move.join()
         g.join()
         publish.join()
-        get_classes.join()
+        means_shift.join()
+        get_zjzbx.join()
 
     def init_ros(self):
         node="LaserScan"+str(self.obj_name)
