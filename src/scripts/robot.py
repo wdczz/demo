@@ -48,6 +48,10 @@ class robot1(robot):
         self.move_zzb=None
         self.move_with_class=np.empty([360,2]) 
         self.means_shift_ok=False
+        self.class_1=np.zeros([360])
+        self.class_2=np.zeros([360])
+        self.class_3=np.zeros([360])
+        self.can_get_class=False
     
     def get_scan(self,msg):
         msgrange=msg.ranges
@@ -75,18 +79,42 @@ class robot1(robot):
     def get_class(self):
         while True:
             if self.means_shift_ok:
-                class_num=0
+                class_num=0.0
+                self.class_1=np.zeros([360])
+                self.class_2=np.zeros([360])
                 for i in range(360):
-                    if euclidean_dist([0,0],self.move_zzb[i])[0]>0.1:
+                    if self.move[i]!=0:
                         if i==0:
-                            class_num+=1
-                            self.move_with_class[i]=(class_num,self.move[i])
+                            class_num+=1.0
+                            self.move_with_class[i][0]=class_num
+                            self.move_with_class[i][1]=self.move[i]
                         else :
-                            if euclidean_dist(self.move_zzb[i-1],self.move_zzb[i])[0]<=0.5:
-                                self.move_with_class[i]=(class_num,self.move[i])
-                            else :
-                                class_num+=1
-                                self.move_with_class[i]=(class_num,self.move[i])
+                            if self.move[i-1]==0:
+                                print("start")
+                                class_num+=1.0
+                                self.move_with_class[i][0]=class_num
+                                self.move_with_class[i][1]=self.move[i]
+                            else:
+                                dis=euclidean_dist(self.move_zzb[i-1],self.move_zzb[i])[0]
+                                if dis<=0.5 :
+                                    self.move_with_class[i][0]=class_num
+                                    self.move_with_class[i][1]=self.move[i]
+                                else :
+                                    print("midden")
+                                    class_num+=1.0
+                                    self.move_with_class[i][0]=class_num
+                                    self.move_with_class[i][1]=self.move[i]
+                    else :
+                        self.move_with_class[i][0]=0
+                        self.move_with_class[i][1]=self.move[i]
+                for i in range(360):
+                    if self.move_with_class[i][0]==1:
+                        self.class_1[i]=self.move[i]
+                    if self.move_with_class[i][0]==2:
+                        self.class_2[i]=self.move[i]
+                self.can_get_class=True
+                # print(self.move)
+                print("----------------------------------------")
                 print("class number is {}".format(class_num))
 
 
@@ -125,7 +153,47 @@ class robot1(robot):
                 self.can_get_point=True
 
                         
-
+    def publish_class_1(self):
+        topic="/"+str(self.obj_name)+"/class_1"+"_pub"
+        pub = rospy.Publisher(topic, LaserScan, queue_size=10)
+        rate = rospy.Rate(10) # 10hz
+        msg=LaserScan()
+        msg.angle_max=3.14199995995
+        msg.angle_min=-3.14199995995
+        msg.angle_increment=0.0175041779876
+        msg.time_increment=0.0
+        msg.scan_time=0.0
+        msg.range_min=0.300000011921
+        msg.range_max=30.0
+        msg.header.stamp = rospy.Time().now()
+        msg.header.frame_id =str(self.obj_name)+"/laser"
+        msg.intensities=[125.0]*360
+        while True:
+            if self.can_get_class:
+                msg.ranges=self.class_1
+                pub.publish(msg)
+                rate.sleep()
+        
+    def publish_class_2(self):
+        topic="/"+str(self.obj_name)+"/class_2"+"_pub"
+        pub = rospy.Publisher(topic, LaserScan, queue_size=10)
+        rate = rospy.Rate(10) # 10hz
+        msg=LaserScan()
+        msg.angle_max=3.14199995995
+        msg.angle_min=-3.14199995995
+        msg.angle_increment=0.0175041779876
+        msg.time_increment=0.0
+        msg.scan_time=0.0
+        msg.range_min=0.300000011921
+        msg.range_max=30.0
+        msg.header.stamp = rospy.Time().now()
+        msg.header.frame_id =str(self.obj_name)+"/laser"
+        msg.intensities=[125.0]*360
+        while True:
+            if self.can_get_class:
+                msg.ranges=self.class_2
+                pub.publish(msg)
+                rate.sleep()
 
 
     def publish_move(self):
@@ -179,18 +247,24 @@ class robot1(robot):
         publish=threading.Thread(target=self.publish_move)
         get_class=threading.Thread(target=self.get_class)
         get_zjzbx=threading.Thread(target=self.get_zjzbx)
+        publish_class_1=threading.Thread(target=self.publish_class_1)
+        publish_class_2=threading.Thread(target=self.publish_class_2)
         scan.start()
         g.start()
         get_move.start()
         publish.start()
         get_class.start()
         get_zjzbx.start()
+        publish_class_1.start()
+        publish_class_2.start()
         scan.join()
         get_move.join()
         g.join()
         publish.join()
         get_class.join()
         get_zjzbx.join()
+        publish_class_1.join()
+        publish_class_2.join()
 
     def init_ros(self):
         node="LaserScan"+str(self.obj_name)
